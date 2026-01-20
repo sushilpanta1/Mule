@@ -1,0 +1,40 @@
+name: Deploy to Anypoint Exchange
+
+on:
+  push:
+    branches:
+      - main  # or change to your release branch
+
+jobs:
+  deploy-to-exchange:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Java
+      uses: actions/setup-java@v3
+      with:
+        java-version: '8'
+        distribution: 'adopt'
+
+    - name: Configure Maven settings.xml
+      run: |
+        mkdir -p ~/.m2
+        cat <<EOF > ~/.m2/settings.xml
+        <settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd">
+          <servers>
+            <server>
+              <id>Exchange</id>
+              <username>${{ secrets.ANYPOINT_CLIENT_ID }}</username>
+              <password>${{ secrets.ANYPOINT_CLIENT_SECRET }}</password>
+            </server>
+          </servers>
+        </settings>
+        EOF
+
+    - name: Build and deploy to Exchange
+      run: mvn clean deploy -DskipTests
